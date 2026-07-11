@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Learn to Teach — Technical teaching blog{% endblock %}
+{% block content %}
+<section class="page hero">
+  <h1>Learn to Teach</h1>
+  <p class="lede">Turn a learning path into grounded technical articles, teaching examples, and quizzes — then publish them on this site after manual review.</p>
+  <div class="actions">
+    <a class="btn" href="/blog">Read the blog</a>
+    <a class="btn btn--secondary" href="/admin">Author dashboard</a>
+  </div>
+</section>
+<section class="page stack">
+  <h2>Recent published articles</h2>
+  {% if articles %}
+  <ul class="list-plain">
+    {% for item in articles %}
+    <li>
+      <a href="/blog/{{ item.slug }}"><strong>{{ item.title }}</strong></a>
+      <p class="muted">{{ item.summary }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No published articles yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Preview — {{ item.title }}{% endblock %}
+{% block nav %}
+<a href="/admin">Dashboard</a>
+<a href="/admin/notes">Notes</a>
+<a href="/admin/content">Content</a>
+<a href="/admin/generate">Generate</a>
+{% endblock %}
+{% block content %}
+<section class="page stack">
+  <div class="actions" style="justify-content: space-between; align-items: center;">
+    <h1>Preview</h1>
+    <span class="badge">{{ item.status }}</span>
+  </div>
+  <p><strong>Mode:</strong> {{ item.generation_mode }} · <strong>Model:</strong> {{ item.model_provider }}/{{ item.model_name }} · <strong>Prompt:</strong> {{ item.prompt_version }}</p>
+
+  <article class="panel stack">
+    <h2>{{ item.title }}</h2>
+    <p class="lede">{{ item.summary }}</p>
+    <div class="article-body">{{ item.article_html | safe }}</div>
+  </article>
+
+  <section class="panel stack">
+    <h2>Teaching example</h2>
+    <h3>{{ item.teaching_example_json.title }}</h3>
+    <p>{{ item.teaching_example_json.scenario }}</p>
+    <p>{{ item.teaching_example_json.explanation }}</p>
+  </section>
+
+  <section class="stack">
+    <h2>Sources</h2>
+    <ul>
+      {% for source in item.sources_json %}
+      <li>{{ source.title }} — {{ source.reference }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="stack">
+    <h2>Warnings</h2>
+    {% if item.warnings_json %}
+    <ul>
+      {% for warning in item.warnings_json %}
+      <li class="flash-warning">{{ warning.severity }}: {{ warning.reason }} ({{ warning.claim }})</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No warnings recorded.</p>
+    {% endif %}
+  </section>
+
+  <section class="stack">
+    <h2>Publication readiness</h2>
+    <p>Status: {{ item.publication_readiness_json.status }}</p>
+    <ul>
+      {% for item_check in item.publication_readiness_json.checklist %}
+      <li>{{ item_check }}</li>
+      {% endfor %}
+    </ul>
+    {% if item.publication_readiness_json.blocking_issues %}
+    <div class="flash-error">
+      {% for issue in item.publication_readiness_json.blocking_issues %}
+      <div>{{ issue }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </section>
+
+  <div class="actions">
+    <a class="btn btn--secondary" href="/admin/content/{{ item.id }}/edit">Edit</a>
+    {% if item.status == 'needs_review' %}
+    <form method="post" action="/admin/content/{{ item.id }}/approve"><button type="submit">Approve</button></form>
+    {% endif %}
+    {% if item.status == 'approved' %}
+    <form method="post" action="/admin/content/{{ item.id }}/publish"><button type="submit">Publish</button></form>
+    {% endif %}
+    {% if item.status == 'published' %}
+    <a class="btn" href="/blog/{{ item.slug }}">Open public URL</a>
+    <form method="post" action="/admin/content/{{ item.id }}/unpublish"><button class="btn--secondary" type="submit">Unpublish</button></form>
+    <p class="muted">Public URL: {{ public_url }}</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

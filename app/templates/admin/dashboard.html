@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Author dashboard{% endblock %}
+{% block nav %}
+<a href="/admin">Dashboard</a>
+<a href="/admin/notes">Notes</a>
+<a href="/admin/content">Content</a>
+<a href="/admin/generate">Generate</a>
+<a href="/blog">Public blog</a>
+{% endblock %}
+{% block content %}
+<section class="page stack">
+  <div class="actions" style="justify-content: space-between;">
+    <h1>Author dashboard</h1>
+    <form method="post" action="/admin/logout"><button class="btn--secondary" type="submit">Log out</button></form>
+  </div>
+  <div class="grid-stats">
+    <div class="stat"><div class="stat__value">{{ stats.notes }}</div><div class="stat__label">Notes</div></div>
+    <div class="stat"><div class="stat__value">{{ stats.draft }}</div><div class="stat__label">Drafts</div></div>
+    <div class="stat"><div class="stat__value">{{ stats.needs_review }}</div><div class="stat__label">Needs review</div></div>
+    <div class="stat"><div class="stat__value">{{ stats.approved }}</div><div class="stat__label">Approved</div></div>
+    <div class="stat"><div class="stat__value">{{ stats.published }}</div><div class="stat__label">Published</div></div>
+  </div>
+
+  <section class="stack">
+    <h2>Recent content</h2>
+    <ul class="list-plain">
+      {% for item in recent %}
+      <li>
+        <strong>{{ item.title }}</strong>
+        <span class="badge">{{ item.status }}</span>
+        <span class="badge">{{ item.generation_mode }}</span>
+        <div class="actions" style="margin-top: 0.5rem;">
+          <a class="btn btn--secondary" href="/admin/content/{{ item.id }}/edit">Edit</a>
+          <a class="btn btn--secondary" href="/admin/content/{{ item.id }}/preview">Preview</a>
+          {% if item.status == 'needs_review' %}
+          <form method="post" action="/admin/content/{{ item.id }}/approve"><button type="submit">Approve</button></form>
+          {% endif %}
+          {% if item.status == 'approved' %}
+          <form method="post" action="/admin/content/{{ item.id }}/publish"><button type="submit">Publish</button></form>
+          {% endif %}
+          {% if item.status == 'published' %}
+          <form method="post" action="/admin/content/{{ item.id }}/unpublish"><button class="btn--secondary" type="submit">Unpublish</button></form>
+          {% endif %}
+        </div>
+      </li>
+      {% else %}
+      <li class="muted">No content yet. Create notes and generate an article.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="stack">
+    <h2>Content warnings</h2>
+    {% if warnings %}
+    <ul>
+      {% for warning in warnings %}
+      <li><a href="/admin/content/{{ warning.content_id }}/preview">{{ warning.title }}</a>: {{ warning.reason }} ({{ warning.claim }})</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No warnings on recent content.</p>
+    {% endif %}
+  </section>
+</section>
+{% endblock %}

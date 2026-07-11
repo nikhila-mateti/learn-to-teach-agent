@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Quiz — {{ item.title }}{% endblock %}
+{% block content %}
+<section class="page page--narrow stack">
+  <h1>Quiz: {{ item.title }}</h1>
+  <div id="quiz-root" data-quiz='{{ quiz | tojson }}'>
+    <div id="quiz-active">
+      <p id="quiz-progress" class="muted"></p>
+      <h2 id="quiz-question"></h2>
+      <div id="quiz-choices" class="stack"></div>
+      <div id="quiz-feedback"></div>
+      <button id="quiz-next" class="btn hidden" type="button">Next</button>
+    </div>
+    <div id="quiz-result" class="hidden panel"></div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/quiz.js"></script>
+{% endblock %}

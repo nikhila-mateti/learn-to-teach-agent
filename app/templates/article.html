@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }} — Learn to Teach{% endblock %}
+{% block content %}
+<article class="page page--narrow stack">
+  <p class="muted"><span class="badge">{{ item.topic }}</span></p>
+  <h1>{{ item.title }}</h1>
+  <p class="lede">{{ item.summary }}</p>
+  <div class="article-body">{{ item.article_html | safe }}</div>
+
+  <section class="panel stack">
+    <h2>Teaching example</h2>
+    <h3>{{ item.teaching_example_json.title }}</h3>
+    <p>{{ item.teaching_example_json.scenario }}</p>
+    <p>{{ item.teaching_example_json.explanation }}</p>
+    <p class="muted">{{ item.teaching_example_json.connection_to_goal }}</p>
+  </section>
+
+  <section class="stack">
+    <h2>Sources</h2>
+    <ul>
+      {% for source in item.sources_json %}
+      <li><strong>{{ source.title }}</strong> — {{ source.reference }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <div class="actions">
+    <a class="btn" href="/blog/{{ item.slug }}/quiz">Take the quiz</a>
+  </div>
+</article>
+{% endblock %}

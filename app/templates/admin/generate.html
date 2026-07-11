@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Generate article{% endblock %}
+{% block nav %}
+<a href="/admin">Dashboard</a>
+<a href="/admin/notes">Notes</a>
+<a href="/admin/content">Content</a>
+<a href="/admin/generate">Generate</a>
+{% endblock %}
+{% block content %}
+<section class="page page--narrow">
+  <div class="panel stack">
+    <h1>Generate article</h1>
+    <p class="muted">Uses notes-grounded mode when notes are meaningful; otherwise curriculum-aware mode.</p>
+    {% if error %}<div class="flash-error">{{ error }}</div>{% endif %}
+    <form method="post" action="/admin/generate" class="stack">
+      <div>
+        <label for="topic">Topic</label>
+        <input id="topic" name="topic" type="text" value="Docker" required>
+      </div>
+      <div>
+        <label for="notes">Optional raw notes</label>
+        <textarea id="notes" name="notes" placeholder="Paste notes or leave empty for curriculum-aware mode"></textarea>
+      </div>
+      {% if notes %}
+      <fieldset>
+        <legend>Select saved notes</legend>
+        {% for note in notes %}
+        <label>
+          <input type="checkbox" name="note_ids" value="{{ note.id }}">
+          {{ note.title }} ({{ note.topic }})
+        </label>
+        {% endfor %}
+      </fieldset>
+      {% endif %}
+      <div>
+        <label for="audience">Target audience</label>
+        <input id="audience" name="audience" type="text" value="engineers preparing for production LLM inference">
+      </div>
+      <div>
+        <label for="content_type">Content type</label>
+        <select id="content_type" name="content_type">
+          <option value="tutorial">Tutorial</option>
+          <option value="linkedin_post">LinkedIn post</option>
+          <option value="project_update">Project update</option>
+        </select>
+      </div>
+      <div>
+        <label for="tone">Tone</label>
+        <input id="tone" name="tone" type="text" value="clear, practical, beginner-friendly">
+      </div>
+      <div>
+        <label for="desired_length">Desired length</label>
+        <select id="desired_length" name="desired_length">
+          <option value="short">Short</option>
+          <option value="medium" selected>Medium</option>
+          <option value="long">Long</option>
+        </select>
+      </div>
+      <label>
+        <input type="checkbox" name="include_quiz" checked>
+        Include quiz
+      </label>
+      <button type="submit">Generate</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

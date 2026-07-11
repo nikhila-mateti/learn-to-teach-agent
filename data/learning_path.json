@@ -1,0 +1,16 @@
+{
+  "current_topic": "Docker",
+  "completed_topics": ["FastAPI"],
+  "upcoming_topics": [
+    "Kubernetes",
+    "LLM fundamentals",
+    "Transformers",
+    "inference optimization",
+    "KV cache",
+    "vLLM",
+    "RAG",
+    "monitoring with Prometheus and Grafana"
+  ],
+  "audience": "engineers preparing for production LLM inference",
+  "long_term_goal": "Build and operate production LLM inference systems, from containerized FastAPI services through Kubernetes, vLLM, RAG, and observability."
+}

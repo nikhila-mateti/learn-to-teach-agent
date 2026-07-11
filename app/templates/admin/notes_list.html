@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Notes{% endblock %}
+{% block nav %}
+<a href="/admin">Dashboard</a>
+<a href="/admin/notes">Notes</a>
+<a href="/admin/content">Content</a>
+<a href="/admin/generate">Generate</a>
+{% endblock %}
+{% block content %}
+<section class="page stack">
+  <div class="actions" style="justify-content: space-between;">
+    <h1>Notes</h1>
+    <a class="btn" href="/admin/notes/new">New note</a>
+  </div>
+  <ul class="list-plain">
+    {% for note in notes %}
+    <li>
+      <strong>{{ note.title }}</strong>
+      <span class="badge">{{ note.topic }}</span>
+      <span class="badge">{{ note.file_type }}</span>
+      <p class="muted">{{ note.content[:220] }}{% if note.content|length > 220 %}…{% endif %}</p>
+    </li>
+    {% else %}
+    <li class="muted">No notes yet.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

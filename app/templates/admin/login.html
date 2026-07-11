@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Author login{% endblock %}
+{% block nav %}
+<a href="/">Home</a>
+<a href="/blog">Blog</a>
+{% endblock %}
+{% block content %}
+<section class="page page--narrow">
+  <div class="panel stack">
+    <h1>Author login</h1>
+    <p class="muted">Single-admin session for this portfolio MVP.</p>
+    {% if error %}<div class="flash-error">{{ error }}</div>{% endif %}
+    <form method="post" action="/admin/login" class="stack">
+      <div>
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" required autocomplete="username">
+      </div>
+      <div>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required autocomplete="current-password">
+      </div>
+      <button type="submit">Sign in</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

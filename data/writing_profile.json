@@ -1,0 +1,17 @@
+{
+  "voice": "clear, practical, beginner-friendly",
+  "preferred_structure": [
+    "why this topic matters on the inference path",
+    "core concepts",
+    "concrete technical example",
+    "common confusions",
+    "what to learn next"
+  ],
+  "avoid": [
+    "unsupported first-person war stories",
+    "fake benchmarks",
+    "generic restaurant analogies",
+    "absolute guarantees"
+  ],
+  "hypothetical_framing": ["Imagine", "Suppose", "Consider"]
+}

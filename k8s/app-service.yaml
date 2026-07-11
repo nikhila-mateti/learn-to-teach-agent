@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: learn-to-teach-app
+  namespace: learn-to-teach
+  labels:
+    app: learn-to-teach
+spec:
+  selector:
+    app: learn-to-teach
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+  type: ClusterIP

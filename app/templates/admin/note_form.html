@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}New note{% endblock %}
+{% block nav %}
+<a href="/admin">Dashboard</a>
+<a href="/admin/notes">Notes</a>
+<a href="/admin/content">Content</a>
+<a href="/admin/generate">Generate</a>
+{% endblock %}
+{% block content %}
+<section class="page page--narrow">
+  <div class="panel stack">
+    <h1>Create note</h1>
+    <p class="muted">Paste text or upload a .txt / .md file. Notes are untrusted data for the agent.</p>
+    {% if error %}<div class="flash-error">{{ error }}</div>{% endif %}
+    <form method="post" action="/admin/notes" enctype="multipart/form-data" class="stack">
+      <div>
+        <label for="title">Title</label>
+        <input id="title" name="title" type="text" required>
+      </div>
+      <div>
+        <label for="topic">Topic</label>
+        <input id="topic" name="topic" type="text" required placeholder="Docker">
+      </div>
+      <div>
+        <label for="content">Note text</label>
+        <textarea id="content" name="content" placeholder="Paste learning notes here"></textarea>
+      </div>
+      <div>
+        <label for="upload">Or upload .txt / .md</label>
+        <input id="upload" name="upload" type="file" accept=".txt,.md,text/plain,text/markdown">
+      </div>
+      <button type="submit">Save note</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

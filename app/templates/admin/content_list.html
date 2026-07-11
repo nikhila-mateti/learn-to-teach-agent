@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Content library{% endblock %}
+{% block nav %}
+<a href="/admin">Dashboard</a>
+<a href="/admin/notes">Notes</a>
+<a href="/admin/content">Content</a>
+<a href="/admin/generate">Generate</a>
+{% endblock %}
+{% block content %}
+<section class="page stack">
+  <h1>Content</h1>
+  <div class="actions">
+    <a class="btn btn--secondary" href="/admin/content">All</a>
+    <a class="btn btn--secondary" href="/admin/content?status_filter=needs_review">Needs review</a>
+    <a class="btn btn--secondary" href="/admin/content?status_filter=approved">Approved</a>
+    <a class="btn btn--secondary" href="/admin/content?status_filter=published">Published</a>
+    <a class="btn" href="/admin/generate">Generate</a>
+  </div>
+  <ul class="list-plain">
+    {% for item in items %}
+    <li>
+      <strong>{{ item.title }}</strong>
+      <span class="badge">{{ item.status }}</span>
+      <span class="badge">{{ item.generation_mode }}</span>
+      <div class="actions" style="margin-top: 0.5rem;">
+        <a class="btn btn--secondary" href="/admin/content/{{ item.id }}/edit">Edit</a>
+        <a class="btn btn--secondary" href="/admin/content/{{ item.id }}/preview">Preview</a>
+      </div>
+    </li>
+    {% else %}
+    <li class="muted">No content in this view.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}
