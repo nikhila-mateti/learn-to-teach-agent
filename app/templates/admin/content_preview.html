@@ -7,12 +7,15 @@
 <a href="/admin/generate">Generate</a>
 {% endblock %}
 {% block content %}
-<section class="page stack">
-  <div class="actions" style="justify-content: space-between; align-items: center;">
-    <h1>Preview</h1>
+<section class="page stack-lg">
+  <div class="actions actions--spread">
+    <div>
+      <p class="eyebrow">Private preview</p>
+      <h1>Preview</h1>
+    </div>
     <span class="badge">{{ item.status }}</span>
   </div>
-  <p><strong>Mode:</strong> {{ item.generation_mode }} · <strong>Model:</strong> {{ item.model_provider }}/{{ item.model_name }} · <strong>Prompt:</strong> {{ item.prompt_version }}</p>
+  <p class="muted"><strong>Mode:</strong> {{ item.generation_mode }} · <strong>Model:</strong> {{ item.model_provider }}/{{ item.model_name }} · <strong>Prompt:</strong> {{ item.prompt_version }}</p>
 
   <article class="panel stack">
     <h2>{{ item.title }}</h2>
@@ -20,7 +23,7 @@
     <div class="article-body">{{ item.article_html | safe }}</div>
   </article>
 
-  <section class="panel stack">
+  <section class="teaching-card stack">
     <h2>Teaching example</h2>
     <h3>{{ item.teaching_example_json.title }}</h3>
     <p>{{ item.teaching_example_json.scenario }}</p>
@@ -49,7 +52,7 @@
     {% endif %}
   </section>
 
-  <section class="stack">
+  <section class="panel panel--soft stack">
     <h2>Publication readiness</h2>
     <p>Status: {{ item.publication_readiness_json.status }}</p>
     <ul>

@@ -5,10 +5,11 @@
 <a href="/blog">Blog</a>
 {% endblock %}
 {% block content %}
-<section class="page page--narrow">
-  <div class="panel stack">
-    <h1>Author login</h1>
-    <p class="muted">Single-admin session for this portfolio MVP.</p>
+<section class="page">
+  <div class="login-shell panel stack">
+    <p class="eyebrow">Author desk</p>
+    <h1>Sign in</h1>
+    <p class="muted">Single-admin session for this portfolio studio.</p>
     {% if error %}<div class="flash-error">{{ error }}</div>{% endif %}
     <form method="post" action="/admin/login" class="stack">
       <div>
@@ -19,7 +20,7 @@
         <label for="password">Password</label>
         <input id="password" name="password" type="password" required autocomplete="current-password">
       </div>
-      <button type="submit">Sign in</button>
+      <button type="submit">Enter studio</button>
     </form>
   </div>
 </section>

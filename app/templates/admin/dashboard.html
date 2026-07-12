@@ -8,9 +8,12 @@
 <a href="/blog">Public blog</a>
 {% endblock %}
 {% block content %}
-<section class="page stack">
-  <div class="actions" style="justify-content: space-between;">
-    <h1>Author dashboard</h1>
+<section class="page stack-lg">
+  <div class="actions actions--spread">
+    <div>
+      <p class="eyebrow">Workspace</p>
+      <h1>Author dashboard</h1>
+    </div>
     <form method="post" action="/admin/logout"><button class="btn--secondary" type="submit">Log out</button></form>
   </div>
   <div class="grid-stats">
@@ -28,8 +31,8 @@
       <li>
         <strong>{{ item.title }}</strong>
         <span class="badge">{{ item.status }}</span>
-        <span class="badge">{{ item.generation_mode }}</span>
-        <div class="actions" style="margin-top: 0.5rem;">
+        <span class="badge badge--muted">{{ item.generation_mode }}</span>
+        <div class="actions actions--offset">
           <a class="btn btn--secondary" href="/admin/content/{{ item.id }}/edit">Edit</a>
           <a class="btn btn--secondary" href="/admin/content/{{ item.id }}/preview">Preview</a>
           {% if item.status == 'needs_review' %}

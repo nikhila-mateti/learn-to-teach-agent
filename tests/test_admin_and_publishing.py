@@ -22,7 +22,13 @@ def test_txt_note_upload(auth_client):
     response = auth_client.post(
         "/admin/notes",
         data={"title": "Docker TXT", "topic": "Docker", "content": ""},
-        files={"upload": ("notes.txt", io.BytesIO(b"Layer caching notes for Docker."), "text/plain")},
+        files={
+            "uploads": (
+                "notes.txt",
+                io.BytesIO(b"Layer caching notes for Docker."),
+                "text/plain",
+            )
+        },
         follow_redirects=False,
     )
     assert response.status_code == 303
@@ -32,7 +38,13 @@ def test_markdown_note_upload(auth_client):
     response = auth_client.post(
         "/admin/notes",
         data={"title": "Docker MD", "topic": "Docker", "content": ""},
-        files={"upload": ("notes.md", io.BytesIO(b"# Notes\n\nUseful Docker observations."), "text/markdown")},
+        files={
+            "uploads": (
+                "notes.md",
+                io.BytesIO(b"# Notes\n\nUseful Docker observations."),
+                "text/markdown",
+            )
+        },
         follow_redirects=False,
     )
     assert response.status_code == 303
@@ -42,10 +54,19 @@ def test_unsupported_file_upload_fails(auth_client):
     response = auth_client.post(
         "/admin/notes",
         data={"title": "Bad", "topic": "Docker", "content": ""},
-        files={"upload": ("notes.pdf", io.BytesIO(b"%PDF"), "application/pdf")},
+        files={"uploads": ("notes.pdf", io.BytesIO(b"%PDF"), "application/pdf")},
     )
     assert response.status_code == 400
     assert b"Unsupported file type" in response.content
+
+
+def test_image_accept_copy_on_note_form(auth_client):
+    response = auth_client.get("/admin/notes/new")
+    assert response.status_code == 200
+    assert b"multiple note photos" in response.content
+    assert b".png" in response.content
+    assert b"image/*" in response.content
+    assert b"multiple" in response.content
 
 
 def test_notes_persist(db_session):
@@ -85,7 +106,9 @@ def test_unapproved_cannot_publish(db_session, fake_content_package):
         assert "approved" in str(exc).lower()
 
 
-def test_approved_can_publish_and_appear_publicly(auth_client, db_session, fake_content_package):
+def test_approved_can_publish_and_appear_publicly(
+    auth_client, db_session, fake_content_package
+):
     item = _seed_item(db_session, fake_content_package, slug="published-docker")
     content_service.approve_content(db_session, item)
     content_service.publish_content(db_session, item)
@@ -137,6 +160,26 @@ def test_duplicate_slugs_rejected(db_session, fake_content_package):
         assert "duplicate" in str(exc).lower()
 
 
+def test_approve_blocked_when_publication_readiness_blocked(
+    db_session, fake_content_package
+):
+    item = _seed_item(db_session, fake_content_package, slug="blocked-approve")
+    item.article_markdown = f"# {item.title}\n\n" + item.article_markdown
+    item.publication_readiness_json = {
+        "status": "blocked",
+        "checklist": [],
+        "blocking_issues": ["Duplicate title: article H1 repeats the package title"],
+        "notes": "",
+    }
+    db_session.commit()
+    db_session.refresh(item)
+    try:
+        content_service.approve_content(db_session, item)
+        raise AssertionError("Expected approve to fail for blocked content")
+    except ValueError as exc:
+        assert "blocking" in str(exc).lower()
+
+
 def test_unpublish_removes_public_access(client, db_session, fake_content_package):
     item = _seed_item(db_session, fake_content_package, slug="temp-public")
     content_service.approve_content(db_session, item)
@@ -161,6 +204,7 @@ def test_templates_inherit_base(client):
 
 def test_no_hardcoded_theme_colors_outside_theme_css():
     from pathlib import Path
+    import re
 
     static = Path("app/static")
     for path in static.glob("*.css"):
@@ -168,8 +212,18 @@ def test_no_hardcoded_theme_colors_outside_theme_css():
             continue
         text = path.read_text(encoding="utf-8")
         assert "font-family:" not in text or "var(--font" in text
-        # Disallow raw hex colors outside theme.css
-        import re
-
         hexes = re.findall(r"#[0-9a-fA-F]{3,8}\b", text)
         assert hexes == [], f"{path} contains hardcoded colors: {hexes}"
+        assert "rgba(" not in text
+        assert "box-shadow:" not in text or "var(--shadow" in text
+
+
+def test_no_inline_theme_hardcoding_in_templates():
+    from pathlib import Path
+    import re
+
+    for path in Path("app/templates").rglob("*.html"):
+        text = path.read_text(encoding="utf-8")
+        assert "style=" not in text, f"{path} still has inline styles"
+        assert not re.search(r"font-family\s*:", text)
+        assert not re.search(r"#[0-9a-fA-F]{3,8}\b", text)

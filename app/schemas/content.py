@@ -13,6 +13,10 @@ class SourceReference(BaseModel):
     source_type: Literal["knowledge_pack", "notes", "learning_path", "other"] = (
         "knowledge_pack"
     )
+    supports_claim: str = Field(
+        min_length=1,
+        description="Specific claim or section this source supports",
+    )
 
 
 class ClaimWarning(BaseModel):

@@ -1,15 +1,16 @@
 {% extends "base.html" %}
 {% block title %}{{ item.title }} — Learn to Teach{% endblock %}
 {% block content %}
-<article class="page page--narrow stack">
-  <p class="muted"><span class="badge">{{ item.topic }}</span></p>
+<article class="page page--article stack-lg">
+  <p class="eyebrow">{{ item.topic }}</p>
   <h1>{{ item.title }}</h1>
   <p class="lede">{{ item.summary }}</p>
+  <hr class="section-rule">
   <div class="article-body">{{ item.article_html | safe }}</div>
 
-  <section class="panel stack">
-    <h2>Teaching example</h2>
-    <h3>{{ item.teaching_example_json.title }}</h3>
+  <section class="teaching-card stack">
+    <p class="eyebrow">Teaching example</p>
+    <h2>{{ item.teaching_example_json.title }}</h2>
     <p>{{ item.teaching_example_json.scenario }}</p>
     <p>{{ item.teaching_example_json.explanation }}</p>
     <p class="muted">{{ item.teaching_example_json.connection_to_goal }}</p>

@@ -68,13 +68,19 @@ def generate_and_persist(
     settings: Settings | None = None,
     model: Any | None = None,
 ) -> ContentItem:
-    """Run the agent, validate, and store content as needs_review."""
+    """Run the agent, validate, and store content for review.
+
+    Blocking validation issues set publication_readiness to blocked but the draft
+    is still saved so the author can edit and fix them.
+    """
     settings = settings or get_settings()
     settings.require_llm_credentials()
     combined_notes = gather_notes_text(db, request)
     package = run_content_agent(
         topic=request.topic,
-        notes=combined_notes if notes_are_meaningful(combined_notes) else combined_notes,
+        notes=combined_notes
+        if notes_are_meaningful(combined_notes)
+        else combined_notes,
         audience=request.audience,
         content_type=request.content_type,
         tone=request.tone,
@@ -89,13 +95,7 @@ def generate_and_persist(
     else:
         package.generation_mode = "notes_grounded"
 
-    package = validate_content_package(package)
-    if package.publication_readiness.blocking_issues:
-        raise ValueError(
-            "Generated content failed validation: "
-            + "; ".join(package.publication_readiness.blocking_issues)
-        )
-
+    package = validate_content_package(package, topic=request.topic)
     return persist_package(db, package, request, settings)
 
 
@@ -172,9 +172,14 @@ def list_content_by_status(db: Session, status: str | None = None) -> list[Conte
 
 def dashboard_stats(db: Session) -> dict[str, int]:
     def count_status(status: str) -> int:
-        return db.scalar(
-            select(func.count()).select_from(ContentItem).where(ContentItem.status == status)
-        ) or 0
+        return (
+            db.scalar(
+                select(func.count())
+                .select_from(ContentItem)
+                .where(ContentItem.status == status)
+            )
+            or 0
+        )
 
     notes_count = db.scalar(select(func.count()).select_from(Note)) or 0
     return {
@@ -221,6 +226,30 @@ def update_content(
     item.quiz_json = quiz_json
     item.sources_json = sources_json
     item.updated_at = datetime.now(UTC)
+
+    # Refresh publication readiness from the edited content.
+    package = ContentPackage(
+        generation_mode=item.generation_mode,  # type: ignore[arg-type]
+        title=item.title,
+        audience=item.audience or "readers",
+        summary=item.summary,
+        article_markdown=item.article_markdown,
+        teaching_example=item.teaching_example_json,  # type: ignore[arg-type]
+        quiz=item.quiz_json,  # type: ignore[arg-type]
+        source_references=item.sources_json,  # type: ignore[arg-type]
+        claim_warnings=[],
+        publication_readiness={
+            "status": "needs_review",
+            "checklist": [],
+            "blocking_issues": [],
+            "notes": "",
+        },
+        prompt_version=item.prompt_version or "v1",
+    )
+    validated = validate_content_package(package, topic=item.topic)
+    item.warnings_json = [w.model_dump() for w in validated.claim_warnings]
+    item.publication_readiness_json = validated.publication_readiness.model_dump()
+
     db.commit()
     db.refresh(item)
     return item
@@ -229,13 +258,53 @@ def update_content(
 def transition_status(item: ContentItem, new_status: str) -> None:
     allowed = VALID_TRANSITIONS.get(item.status, set())
     if new_status not in allowed:
-        raise ValueError(
-            f"Invalid transition from {item.status} to {new_status}"
-        )
+        raise ValueError(f"Invalid transition from {item.status} to {new_status}")
     item.status = new_status
 
 
+def _assert_not_blocked(item: ContentItem) -> None:
+    readiness = item.publication_readiness_json or {}
+    if readiness.get("status") == "blocked" or readiness.get("blocking_issues"):
+        issues = readiness.get("blocking_issues") or [
+            "publication readiness is blocked"
+        ]
+        raise ValueError(
+            "Content has blocking publication issues: " + "; ".join(issues)
+        )
+
+
 def approve_content(db: Session, item: ContentItem) -> ContentItem:
+    _assert_not_blocked(item)
+    # Re-validate current markdown/quiz/sources before approval.
+    package = ContentPackage(
+        generation_mode=item.generation_mode,  # type: ignore[arg-type]
+        title=item.title,
+        audience=item.audience or "readers",
+        summary=item.summary,
+        article_markdown=item.article_markdown,
+        teaching_example=item.teaching_example_json,  # type: ignore[arg-type]
+        quiz=item.quiz_json,  # type: ignore[arg-type]
+        source_references=item.sources_json,  # type: ignore[arg-type]
+        claim_warnings=[],
+        publication_readiness={
+            "status": "needs_review",
+            "checklist": [],
+            "blocking_issues": [],
+            "notes": "",
+        },
+        prompt_version=item.prompt_version or "v1",
+    )
+    validated = validate_content_package(package, topic=item.topic)
+    item.warnings_json = [w.model_dump() for w in validated.claim_warnings]
+    item.publication_readiness_json = validated.publication_readiness.model_dump()
+    if validated.publication_readiness.status == "blocked":
+        db.commit()
+        db.refresh(item)
+        raise ValueError(
+            "Content has blocking publication issues: "
+            + "; ".join(validated.publication_readiness.blocking_issues)
+        )
+
     transition_status(item, "approved")
     item.manual_review_status = "approved"
     item.approved_at = datetime.now(UTC)
@@ -248,11 +317,18 @@ def approve_content(db: Session, item: ContentItem) -> ContentItem:
     return item
 
 
-def publish_content(db: Session, item: ContentItem, settings: Settings | None = None) -> ContentItem:
+def publish_content(
+    db: Session, item: ContentItem, settings: Settings | None = None
+) -> ContentItem:
     settings = settings or get_settings()
     if item.status != "approved":
         raise ValueError("Only approved content can be published")
-    if not item.title.strip() or not item.slug.strip() or not item.article_markdown.strip():
+    _assert_not_blocked(item)
+    if (
+        not item.title.strip()
+        or not item.slug.strip()
+        or not item.article_markdown.strip()
+    ):
         raise ValueError("Title, slug, and article content are required to publish")
     quiz_issues = validate_quiz(item.quiz_json or [])
     if quiz_issues:
@@ -307,7 +383,9 @@ def list_notes(db: Session) -> list[Note]:
     return list(db.scalars(select(Note).order_by(Note.updated_at.desc())).all())
 
 
-def content_to_dict(item: ContentItem, settings: Settings | None = None) -> dict[str, Any]:
+def content_to_dict(
+    item: ContentItem, settings: Settings | None = None
+) -> dict[str, Any]:
     settings = settings or get_settings()
     return {
         "id": item.id,
@@ -333,7 +411,9 @@ def content_to_dict(item: ContentItem, settings: Settings | None = None) -> dict
         "published_at": item.published_at.isoformat() if item.published_at else None,
         "created_at": item.created_at.isoformat() if item.created_at else None,
         "updated_at": item.updated_at.isoformat() if item.updated_at else None,
-        "public_url": public_url(item, settings) if item.status == "published" else None,
+        "public_url": public_url(item, settings)
+        if item.status == "published"
+        else None,
     }
 
 

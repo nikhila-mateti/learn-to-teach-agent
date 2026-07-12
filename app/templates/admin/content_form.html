@@ -7,10 +7,11 @@
 <a href="/admin/generate">Generate</a>
 {% endblock %}
 {% block content %}
-<section class="page stack">
+<section class="page stack-lg">
+  <p class="eyebrow">Revision</p>
   <h1>Edit content</h1>
   {% if error %}<div class="flash-error">{{ error }}</div>{% endif %}
-  <form method="post" action="/admin/content/{{ item.id }}/edit" class="stack">
+  <form method="post" action="/admin/content/{{ item.id }}/edit" class="stack panel">
     <div>
       <label for="title">Title</label>
       <input id="title" name="title" type="text" value="{{ item.title }}" required>
@@ -25,19 +26,19 @@
     </div>
     <div>
       <label for="article_markdown">Article Markdown</label>
-      <textarea id="article_markdown" name="article_markdown" style="min-height: 18rem;" required>{{ item.article_markdown }}</textarea>
+      <textarea id="article_markdown" name="article_markdown" class="textarea--tall" required>{{ item.article_markdown }}</textarea>
     </div>
     <div>
       <label for="teaching_example_json">Teaching example JSON</label>
-      <textarea id="teaching_example_json" name="teaching_example_json" required>{{ teaching_example_json }}</textarea>
+      <textarea id="teaching_example_json" name="teaching_example_json" class="textarea--code" required>{{ teaching_example_json }}</textarea>
     </div>
     <div>
       <label for="quiz_json">Quiz JSON</label>
-      <textarea id="quiz_json" name="quiz_json" style="min-height: 14rem;" required>{{ quiz_json }}</textarea>
+      <textarea id="quiz_json" name="quiz_json" class="textarea--code" required>{{ quiz_json }}</textarea>
     </div>
     <div>
       <label for="sources_json">Sources JSON</label>
-      <textarea id="sources_json" name="sources_json" required>{{ sources_json }}</textarea>
+      <textarea id="sources_json" name="sources_json" class="textarea--code" required>{{ sources_json }}</textarea>
     </div>
     <div class="actions">
       <button type="submit">Save edits</button>

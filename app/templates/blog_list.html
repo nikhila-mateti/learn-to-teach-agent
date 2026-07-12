@@ -1,15 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Blog — Learn to Teach{% endblock %}
 {% block content %}
-<section class="page stack">
+<section class="page stack-lg">
+  <p class="eyebrow">Library</p>
   <h1>Blog</h1>
   <p class="muted">Published tutorials only. Drafts and previews stay private.</p>
   {% if articles %}
   <ul class="list-plain">
     {% for item in articles %}
     <li>
-      <a href="/blog/{{ item.slug }}"><strong>{{ item.title }}</strong></a>
-      <div><span class="badge">{{ item.topic }}</span></div>
+      <span class="badge">{{ item.topic }}</span>
+      <p><a href="/blog/{{ item.slug }}"><strong>{{ item.title }}</strong></a></p>
       <p class="muted">{{ item.summary }}</p>
     </li>
     {% endfor %}

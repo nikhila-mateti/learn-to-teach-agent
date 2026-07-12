@@ -7,7 +7,8 @@
 <a href="/admin/generate">Generate</a>
 {% endblock %}
 {% block content %}
-<section class="page stack">
+<section class="page stack-lg">
+  <p class="eyebrow">Manuscripts</p>
   <h1>Content</h1>
   <div class="actions">
     <a class="btn btn--secondary" href="/admin/content">All</a>
@@ -21,8 +22,8 @@
     <li>
       <strong>{{ item.title }}</strong>
       <span class="badge">{{ item.status }}</span>
-      <span class="badge">{{ item.generation_mode }}</span>
-      <div class="actions" style="margin-top: 0.5rem;">
+      <span class="badge badge--muted">{{ item.generation_mode }}</span>
+      <div class="actions actions--offset">
         <a class="btn btn--secondary" href="/admin/content/{{ item.id }}/edit">Edit</a>
         <a class="btn btn--secondary" href="/admin/content/{{ item.id }}/preview">Preview</a>
       </div>

@@ -77,13 +77,17 @@ def load_approved_knowledge(topic: str) -> dict[str, Any]:
             "common_confusions": [],
             "limitations": [],
             "source_references": [],
-            "message": f"No approved knowledge pack for topic '{topic}'",
+            "message": (
+                f"No approved knowledge pack for topic '{topic}'. "
+                "Do not call this tool again for other topics. "
+                "Proceed to draft the ContentPackage using the learning path "
+                "and any available notes."
+            ),
         }
     text = knowledge_path.read_text(encoding="utf-8")
     return {
         "topic": topic,
         "knowledge_available": True,
-        "raw_markdown": text,
         "facts": _section_lines(text, "Facts"),
         "commands": _section_lines(text, "Commands"),
         "common_confusions": _section_lines(text, "Common confusions"),

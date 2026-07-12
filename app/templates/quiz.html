@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Quiz — {{ item.title }}{% endblock %}
 {% block content %}
-<section class="page page--narrow stack">
-  <h1>Quiz: {{ item.title }}</h1>
+<section class="page page--article stack-lg">
+  <p class="eyebrow">Interactive quiz</p>
+  <h1>{{ item.title }}</h1>
   <div id="quiz-root" data-quiz='{{ quiz | tojson }}'>
-    <div id="quiz-active">
+    <div id="quiz-active" class="panel stack">
       <p id="quiz-progress" class="muted"></p>
       <h2 id="quiz-question"></h2>
       <div id="quiz-choices" class="stack"></div>

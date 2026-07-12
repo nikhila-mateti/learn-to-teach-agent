@@ -7,10 +7,11 @@
 <a href="/admin/generate">Generate</a>
 {% endblock %}
 {% block content %}
-<section class="page page--narrow">
+<section class="page page--article">
   <div class="panel stack">
+    <p class="eyebrow">Compose</p>
     <h1>Generate article</h1>
-    <p class="muted">Uses notes-grounded mode when notes are meaningful; otherwise curriculum-aware mode.</p>
+    <p class="muted">Uses a LangChain agent with curriculum tools and a strict content-contract system prompt. Notes-grounded when notes are meaningful; otherwise curriculum-aware. Generation usually takes 30–90 seconds; if the API is rate-limited you will see an error instead of an endless hang.</p>
     {% if error %}<div class="flash-error">{{ error }}</div>{% endif %}
     <form method="post" action="/admin/generate" class="stack">
       <div>
@@ -19,7 +20,7 @@
       </div>
       <div>
         <label for="notes">Optional raw notes</label>
-        <textarea id="notes" name="notes" placeholder="Paste notes or leave empty for curriculum-aware mode"></textarea>
+        <textarea id="notes" name="notes" class="textarea--tall" placeholder="Paste notes or leave empty for curriculum-aware mode"></textarea>
       </div>
       {% if notes %}
       <fieldset>

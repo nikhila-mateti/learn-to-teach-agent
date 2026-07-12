@@ -1,4 +1,4 @@
-.PHONY: install lint test build up down logs smoke k8s-validate
+.PHONY: install lint test build up down logs smoke k8s-validate db-shell
 
 install:
 	python3 -m pip install -r requirements-dev.txt
@@ -26,3 +26,6 @@ smoke:
 
 k8s-validate:
 	bash scripts/validate_k8s.sh
+
+db-shell:
+	docker compose exec db psql -U lta -d learn_to_teach

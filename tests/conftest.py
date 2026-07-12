@@ -39,6 +39,95 @@ from app.schemas.content import (
 
 get_settings.cache_clear()
 
+QUALITY_DOCKER_ARTICLE = """## Problem statement: why Docker matters for inference
+
+Packaging a FastAPI mock-inference service is hard when Python dependencies, ports,
+and optional model weights differ between laptops. Docker gives you a repeatable
+build unit without promising identical runtime on every host, OS, architecture, or GPU.
+
+## Prerequisites
+
+- Basic Python and terminal familiarity
+- Docker Engine installed locally
+- Comfort reading a short Dockerfile
+
+## Concept sequence
+
+1. **Dockerfile** — instructions that build an image.
+2. **Image** — the immutable layered template.
+3. **Container** — a running instance of an image.
+4. **Host port vs container port** — `-p 8000:8080` maps host `8000` to container `8080`.
+5. **Request flow** — client → host port → published mapping → FastAPI in the container.
+6. **Dependency packaging** — install Python deps in the image so rebuilds are predictable.
+7. **EXPOSE** — documents the intended container port; it does not publish that port alone.
+
+## Runnable technical example
+
+Build a mock `/infer` FastAPI service (no real model weights required):
+
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY app.py .
+EXPOSE 8080
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
+```
+
+```python
+from fastapi import FastAPI
+
+app = FastAPI()
+# Mock "model load" — no real weights.
+MODEL = {"name": "mock-embedder", "ready": True}
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "model": MODEL["name"]}
+
+@app.post("/infer")
+def infer(payload: dict):
+    text = payload.get("text", "")
+    return {"embedding_dim": 8, "token_count": len(text.split())}
+```
+
+```bash
+docker build -t fastapi-inference:dev .
+docker run --rm -p 8000:8080 fastapi-inference:dev
+curl -s http://127.0.0.1:8000/health
+```
+
+### Expected behavior
+
+The health endpoint should return JSON with `"status": "ok"`. Requests hit host port
+8000 and reach the process listening on container port 8080.
+
+## Common confusions
+
+- EXPOSE is documentation; `-p` publishes the port.
+- An image is not a running service; a container is.
+- Copying secrets into the image is a risk; inject them at runtime.
+
+## Limitations
+
+Docker packages dependencies and process isolation. It does not install NVIDIA drivers,
+guarantee GPU access, fix architecture mismatches, or replace orchestration, quotas,
+or monitoring. Resource limits still matter when loading weights.
+
+## Practice exercise
+
+1. Create the Dockerfile and `app.py` above.
+2. Build and run with `-p 8000:8080`.
+3. Call `/health` and `/infer` from the host.
+4. Change only the host port mapping and confirm the container port stays 8080.
+
+## What to learn next
+
+Compose for multi-service local stacks, then Kubernetes scheduling, then GPU device
+plugins and specialized inference runtimes.
+"""
+
 
 def make_quiz() -> list[QuizQuestion]:
     questions: list[QuizQuestion] = []
@@ -67,27 +156,27 @@ def fake_content_package() -> ContentPackage:
         generation_mode="curriculum_aware",
         title="Docker for Inference Engineers",
         audience="engineers preparing for production LLM inference",
-        summary="A beginner-friendly introduction to packaging FastAPI inference services.",
-        article_markdown=(
-            "## Why Docker matters\n\n"
-            "Imagine you package a FastAPI model-serving app so every environment "
-            "starts from the same image.\n\n"
-            "Containers help you move from local FastAPI experiments toward "
-            "Kubernetes and later vLLM deployments.\n"
+        summary=(
+            "A beginner-friendly introduction to packaging a mock FastAPI "
+            "inference service with Docker."
         ),
+        article_markdown=QUALITY_DOCKER_ARTICLE,
         teaching_example=TeachingExample(
-            title="FastAPI inference container",
+            title="Mock FastAPI inference with mounted weights",
             scenario=(
-                "Suppose you containerize a FastAPI service that loads a small "
-                "model library and listens on port 8000."
+                "Imagine a FastAPI API that loads mock model-loading code at startup, "
+                "installs Python dependencies in the image, mounts optional model weights "
+                "read-only at /models, listens on internal container port 8080, publishes "
+                "host port 8000, and exposes a /health endpoint before /infer accepts traffic."
             ),
             explanation=(
-                "The Dockerfile installs Python dependencies once, copies the app, "
-                "and exposes port 8000 for repeatable local runs."
+                "This hypothetical scenario adds mounting and health-gate detail beyond the "
+                "main article's basic Dockerfile. The container does not need real GPU weights; "
+                "the mount keeps the image small while dependency packaging stays in the build."
             ),
             connection_to_goal=(
-                "The same image becomes the unit you later schedule on Kubernetes "
-                "before specializing for vLLM and monitoring."
+                "The same packaging pattern becomes the unit you later schedule on Kubernetes "
+                "before specializing for GPU drivers, vLLM, and monitoring."
             ),
             is_hypothetical=True,
         ),
@@ -97,6 +186,10 @@ def fake_content_package() -> ContentPackage:
                 title="Docker knowledge pack",
                 reference="data/knowledge/docker.md",
                 source_type="knowledge_pack",
+                supports_claim=(
+                    "EXPOSE documents the container port and does not publish it; "
+                    "host vs container port mapping uses -p"
+                ),
             )
         ],
         claim_warnings=[],

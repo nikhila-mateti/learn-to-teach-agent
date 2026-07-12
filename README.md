@@ -68,16 +68,20 @@ Prompts live under `prompts/` with version, role, goal, context/source/personal-
 
 ```bash
 cp .env.example .env
+# Set OPENAI_API_KEY or ANTHROPIC_API_KEY, ADMIN_USERNAME, ADMIN_PASSWORD_HASH, SESSION_SECRET
+# For Compose .env files, escape each bcrypt $ as $$
 python3 -m venv .venv
 source .venv/bin/activate
 make install
 ```
 
-Default admin login (change before any real deployment):
+Generate an admin password hash:
 
-- Username: `admin`
-- Password: `changeme`
-- Hash is stored in `ADMIN_PASSWORD_HASH` (never commit a plaintext production password)
+```bash
+python -c "import bcrypt; print(bcrypt.hashpw(b'YOUR_PASSWORD', bcrypt.gensalt()).decode().replace('\$','\$\$'))"
+```
+
+Store the plaintext password only in a local secret manager or `.admin_credentials.local` (gitignored). Never commit `admin` / `changeme` defaults for a running environment.
 
 ### Run tests and lint
 
@@ -236,7 +240,7 @@ Built a FastAPI + LangChain portfolio platform that generates curriculum-aware t
 cp .env.example .env
 # Edit .env: set LLM_PROVIDER, MODEL_NAME, and the matching API key
 make up
-# Open http://localhost:8000/admin/login  (admin / changeme)
+# Open http://localhost:8000/admin/login with your configured admin credentials
 # Create or select notes → Generate → Edit → Approve → Publish
 # Visit http://localhost:8000/blog/{slug}
 ```

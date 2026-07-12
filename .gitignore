@@ -18,3 +18,4 @@ htmlcov/
 .idea/
 .vscode/
 *.sqlite3
+.admin_credentials.local

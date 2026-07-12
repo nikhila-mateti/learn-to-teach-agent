@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     admin_password_hash: str = ""
     session_secret: str = "dev-only-change-me"
     max_upload_bytes: int = Field(default=1_048_576, ge=1024)
+    max_image_upload_bytes: int = Field(default=5_242_880, ge=1024)
     data_dir: str = "data"
     prompts_dir: str = "prompts"
 

@@ -7,9 +7,12 @@
 <a href="/admin/generate">Generate</a>
 {% endblock %}
 {% block content %}
-<section class="page stack">
-  <div class="actions" style="justify-content: space-between;">
-    <h1>Notes</h1>
+<section class="page stack-lg">
+  <div class="actions actions--spread">
+    <div>
+      <p class="eyebrow">Source material</p>
+      <h1>Notes</h1>
+    </div>
     <a class="btn" href="/admin/notes/new">New note</a>
   </div>
   <ul class="list-plain">
@@ -17,7 +20,7 @@
     <li>
       <strong>{{ note.title }}</strong>
       <span class="badge">{{ note.topic }}</span>
-      <span class="badge">{{ note.file_type }}</span>
+      <span class="badge badge--muted">{{ note.file_type }}</span>
       <p class="muted">{{ note.content[:220] }}{% if note.content|length > 220 %}…{% endif %}</p>
     </li>
     {% else %}

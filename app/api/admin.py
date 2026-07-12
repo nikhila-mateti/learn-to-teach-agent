@@ -14,11 +14,19 @@ from app.database import get_db
 from app.schemas.requests import ContentGenerateRequest
 from app.services import content_service
 from app.services.auth import attempt_login, is_authenticated, logout
+from app.services.note_image_service import (
+    IMAGE_SUFFIX_TO_MIME,
+    extract_text_from_note_image,
+)
 
 router = APIRouter(tags=["admin"])
 templates = Jinja2Templates(directory="app/templates")
 
-ALLOWED_NOTE_TYPES = {".txt": "txt", ".md": "md"}
+ALLOWED_TEXT_NOTE_TYPES = {".txt": "txt", ".md": "md"}
+ALLOWED_IMAGE_NOTE_TYPES = {
+    suffix: suffix.lstrip(".") for suffix in IMAGE_SUFFIX_TO_MIME
+}
+ALLOWED_NOTE_TYPES = {**ALLOWED_TEXT_NOTE_TYPES, **ALLOWED_IMAGE_NOTE_TYPES}
 
 
 def _redirect_login() -> RedirectResponse:
@@ -105,58 +113,103 @@ async def notes_create(
     title: str = Form(...),
     topic: str = Form(...),
     content: str = Form(""),
-    upload: UploadFile | None = File(None),
+    uploads: list[UploadFile] = File(default=[]),
 ):
     if not is_authenticated(request):
         return _redirect_login()
     settings = get_settings()
-    original_filename = None
-    file_type = "text"
-    body = content.strip()
+    pasted = content.strip()
+    parts: list[str] = []
+    if pasted:
+        parts.append(pasted)
 
-    if upload and upload.filename:
-        name = upload.filename
+    files = [f for f in uploads if f is not None and getattr(f, "filename", None)]
+    original_names: list[str] = []
+    file_types: list[str] = []
+
+    for upload in files:
+        name = upload.filename or "upload"
         suffix = "." + name.rsplit(".", 1)[-1].lower() if "." in name else ""
         if suffix not in ALLOWED_NOTE_TYPES:
             return templates.TemplateResponse(
                 request,
                 "admin/note_form.html",
-                {"error": "Unsupported file type. Upload .txt or .md only."},
+                {
+                    "error": (
+                        f"Unsupported file type for {name}. Upload .txt, .md, or images "
+                        "(.png, .jpg, .jpeg, .webp, .gif)."
+                    )
+                },
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
         raw = await upload.read()
-        if len(raw) > settings.max_upload_bytes:
+        is_image = suffix in ALLOWED_IMAGE_NOTE_TYPES
+        max_bytes = (
+            settings.max_image_upload_bytes if is_image else settings.max_upload_bytes
+        )
+        if len(raw) > max_bytes:
             return templates.TemplateResponse(
                 request,
                 "admin/note_form.html",
-                {"error": f"File exceeds max upload size of {settings.max_upload_bytes} bytes."},
+                {"error": f"{name} exceeds max upload size of {max_bytes} bytes."},
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
-        body = raw.decode("utf-8", errors="replace")
-        original_filename = name
-        file_type = ALLOWED_NOTE_TYPES[suffix]
+        original_names.append(name)
+        file_types.append(ALLOWED_NOTE_TYPES[suffix])
+        if is_image:
+            try:
+                extracted = extract_text_from_note_image(
+                    raw,
+                    filename=name,
+                    suffix=suffix,
+                    settings=settings,
+                )
+            except ValueError as exc:
+                return templates.TemplateResponse(
+                    request,
+                    "admin/note_form.html",
+                    {"error": f"{name}: {exc}"},
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+            parts.append(extracted)
+        else:
+            decoded = raw.decode("utf-8", errors="replace").strip()
+            if decoded:
+                parts.append(f"[Uploaded file: {name}]\n\n{decoded}")
 
-    if not body.strip():
+    body = "\n\n---\n\n".join(parts).strip()
+    if not body:
         return templates.TemplateResponse(
             request,
             "admin/note_form.html",
-            {"error": "Provide note text or upload a file."},
+            {"error": "Provide note text or upload one or more files/images."},
             status_code=status.HTTP_400_BAD_REQUEST,
         )
+
+    if len(file_types) == 1:
+        file_type = file_types[0]
+    elif file_types and all(t in ALLOWED_IMAGE_NOTE_TYPES.values() for t in file_types):
+        file_type = "images"
+    elif file_types:
+        file_type = "mixed"
+    else:
+        file_type = "text"
 
     content_service.create_note(
         db,
         title=title,
         topic=topic,
         content=body,
-        original_filename=original_filename,
+        original_filename=", ".join(original_names) if original_names else None,
         file_type=file_type,
     )
     return RedirectResponse(url="/admin/notes", status_code=303)
 
 
 @router.get("/admin/content", response_class=HTMLResponse)
-def content_list(request: Request, db: Session = Depends(get_db), status_filter: str | None = None):
+def content_list(
+    request: Request, db: Session = Depends(get_db), status_filter: str | None = None
+):
     if not is_authenticated(request):
         return _redirect_login()
     items = content_service.list_content_by_status(db, status_filter)

@@ -7,10 +7,11 @@
 <a href="/admin/generate">Generate</a>
 {% endblock %}
 {% block content %}
-<section class="page page--narrow">
+<section class="page page--article">
   <div class="panel stack">
+    <p class="eyebrow">Capture learning</p>
     <h1>Create note</h1>
-    <p class="muted">Paste text or upload a .txt / .md file. Notes are untrusted data for the agent.</p>
+    <p class="muted">Paste text, upload .txt / .md, or select multiple note photos (.png, .jpg, .jpeg, .webp, .gif). Each image is transcribed, then combined into one note for generation.</p>
     {% if error %}<div class="flash-error">{{ error }}</div>{% endif %}
     <form method="post" action="/admin/notes" enctype="multipart/form-data" class="stack">
       <div>
@@ -23,11 +24,17 @@
       </div>
       <div>
         <label for="content">Note text</label>
-        <textarea id="content" name="content" placeholder="Paste learning notes here"></textarea>
+        <textarea id="content" name="content" class="textarea--tall" placeholder="Paste learning notes here (optional if you upload files or images)"></textarea>
       </div>
       <div>
-        <label for="upload">Or upload .txt / .md</label>
-        <input id="upload" name="upload" type="file" accept=".txt,.md,text/plain,text/markdown">
+        <label for="uploads">Upload files / images (multiple allowed)</label>
+        <input
+          id="uploads"
+          name="uploads"
+          type="file"
+          multiple
+          accept="image/*,.txt,.md,.png,.jpg,.jpeg,.webp,.gif,text/plain,text/markdown"
+        >
       </div>
       <button type="submit">Save note</button>
     </form>
