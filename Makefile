@@ -1,13 +1,15 @@
 .PHONY: install lint test build up down logs smoke k8s-validate db-shell
 
+PYTHON ?= .venv/bin/python
+
 install:
-	python3 -m pip install -r requirements-dev.txt
+	$(PYTHON) -m pip install -r requirements-dev.txt
 
 lint:
-	ruff check app tests
+	$(PYTHON) -m ruff check app tests
 
 test:
-	pytest -q
+	$(PYTHON) -m pytest -q
 
 build:
 	docker compose build

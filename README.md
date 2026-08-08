@@ -2,6 +2,8 @@
 
 AI-assisted technical teaching platform that turns a learning topic, optional notes, and a saved curriculum into a beginner-friendly article, teaching example, interactive quiz, and publication-readiness report — then hosts the published blog on the same FastAPI app.
 
+> **In one sentence:** this is a human-reviewed content pipeline, not a chat interface: it gathers grounded context, produces typed output, runs deterministic checks, and requires approval before publishing.
+
 ## Product problem
 
 Engineers learning a long path (FastAPI → Docker → Kubernetes → LLM inference → vLLM → RAG → Prometheus/Grafana) accumulate notes that rarely become durable teaching artifacts. Generic LLM wrappers invent personal war stories, fake metrics, and ungrounded commands. This project treats generation as a **reviewable draft pipeline** with curriculum tools, deterministic validation, manual approval, and self-hosted publishing.
@@ -15,26 +17,33 @@ Engineers learning a long path (FastAPI → Docker → Kubernetes → LLM infere
 - Self-hosted public blog + private author dashboard (not Medium/Substack/WordPress)
 - Notes stored in PostgreSQL, not only on the container filesystem
 
+## Product demo
+
+| Human review before publication | Published teaching experience |
+|---|---|
+| ![Author dashboard showing notes, review and publication states, and explicit lifecycle actions](docs/screenshots/review-workflow.jpg) | ![Published tutorial showing the reader-facing article and teaching content](docs/screenshots/published-article.jpg) |
+
+The private workflow preserves model/provider and prompt-version metadata, surfaces validation results, and exposes explicit edit/approve/publish actions. Only published items appear on the public blog. These screenshots are from the running application with deterministic demo content, so reproducing the UI does not require a paid model call.
+
 ## Architecture
 
-```text
-Browser
-  ├─ Public: / /blog /blog/{slug} /blog/{slug}/quiz
-  └─ Admin:  /admin/* (session auth)
-        │
-        ▼
-FastAPI (Jinja2 + JSON API)
-  ├─ content_service (lifecycle, slug, publish)
-  ├─ validation_service (deterministic checks)
-  └─ content_agent (LangChain create_agent)
-        ├─ load_learning_path
-        ├─ load_topic_notes
-        ├─ load_approved_knowledge
-        └─ load_writing_profile
-        │
-        ▼
-PostgreSQL (notes + content_items)
+```mermaid
+flowchart LR
+    A["Notes, curriculum, knowledge packs, writing profile"] --> B["Agent tools"]
+    B --> C["LLM"]
+    C --> D["Structured ContentPackage"]
+    D --> E["Deterministic validator"]
+    E --> F["Human review and edit"]
+    F -->|Approve| G["Publish"]
+    F -->|Revise| B
+
+    H["PostgreSQL"] <--> A
+    E --> H
+    F --> H
+    G --> H
 ```
+
+The FastAPI application serves both surfaces: a session-protected author dashboard under `/admin/*` and the public blog, article, and quiz routes. PostgreSQL stores notes, generated packages, validation results, lifecycle state, and publication metadata.
 
 ### Agent tool flow
 
@@ -115,10 +124,14 @@ Compose starts:
 ## API usage example
 
 ```bash
-# Login is cookie-based for HTML; for JSON API use an authenticated session.
-# After browser login, or in tests with TestClient session:
+# The JSON API uses the same authenticated admin session as the HTML UI.
+# Replace the placeholders with the credentials configured in .env.
+curl -c lta.cookies -X POST http://localhost:8000/admin/login \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  --data-urlencode 'username=YOUR_ADMIN_USERNAME' \
+  --data-urlencode 'password=YOUR_ADMIN_PASSWORD'
 
-curl -X POST http://localhost:8000/api/v1/content/generate \
+curl -b lta.cookies -X POST http://localhost:8000/api/v1/content/generate \
   -H 'Content-Type: application/json' \
   -d '{
     "topic": "Docker",
@@ -188,42 +201,37 @@ Domain configuration is **not** claimed completed in this project verification.
 
 MVP creates tables with SQLAlchemy `create_all` on startup. Alembic migrations are a recommended production improvement.
 
-## Security limitations
+## Known limitations and next steps
 
-- Single-admin session auth (bcrypt hash + HTTP-only cookie). Prefer a managed IdP before multi-user.
-- Do not commit real API keys or production password hashes you care about.
-- Uploaded notes are untrusted; size-limited; `.txt`/`.md` only.
-- Rendered Markdown is sanitized with Bleach (no author JS in articles).
+- **Evals:** `evals/content_cases.json` is an initial case set, not yet a scored regression harness. Add rubric-based quality, grounding, and safety evals to CI.
+- **Observability:** add structured request traces, agent/tool-call visibility, validation metrics, and alerting. Do not log note contents or secrets by default.
+- **Background jobs:** generation currently runs in the request path. Move long-running work to a durable queue with status updates, cancellation, and retry policy.
+- **Authentication and RBAC:** the MVP has one bcrypt-authenticated admin session. Replace it with a managed identity provider, CSRF protection, HTTPS-only cookies, and author/reviewer/publisher roles.
+- **Managed data layer:** production should use managed PostgreSQL, migrations, backups, connection pooling, and object storage for uploads; local startup currently uses `create_all`.
+- **Cost and latency tracking:** persist per-generation timing, token usage, model/provider, retry count, and estimated cost; expose budgets without storing sensitive prompts unnecessarily.
+- **Model quality:** deterministic validation catches known claim and schema problems, but it cannot prove factual correctness. Human review remains mandatory, and the local knowledge packs are intentionally incomplete.
 
-## AI-content limitations
+## Verification
 
-- Model output can still be wrong; human review is mandatory.
-- Validation catches many claim classes but not all factual errors.
-- Knowledge packs are local and incomplete by design.
+The repository separates fast, key-free checks from the container smoke test:
 
-## What was actually validated
+**Latest local verification (August 8, 2026):** Ruff passed, all 64 tests passed, the Docker image built successfully, PostgreSQL reached `healthy`, and the runtime smoke test passed all three HTTP checks.
 
-See the final verification report in the project completion notes / CI logs for exact commands. Intended verification set:
+| Check | Command | Coverage |
+|---|---|---|
+| Lint | `make lint` | Ruff over application and tests |
+| Unit/integration tests | `make test` | 64 tests; LLM calls mocked; auth, tools, modes, validation, publishing, uploads, and health routes |
+| Compose validation | `docker compose config --quiet` | Compose file and environment interpolation |
+| Runtime smoke test | `make up && make smoke` | App/database containers plus live, ready, and home HTTP checks |
+| Kubernetes syntax | `make k8s-validate` | Client-side manifest validation when `kubectl` and a reachable API server are available; otherwise reports an explicit skip |
 
-- `ruff check`
-- `pytest`
-- `docker compose config`
-- `docker compose up -d --build`
-- `scripts/smoke_test.sh`
-- Admin login, note create, approve/publish lifecycle, public 200/404, app recreate persistence
-- `kubectl` client dry-run when available
-
-## Future improvements
-
-- Alembic migrations
-- Managed auth and multi-author roles
-- Richer knowledge packs per curriculum topic
-- Background job queue for long generations
-- Managed Postgres + object storage for uploads
+GitHub Actions repeats lint and tests on every pull request and builds the Docker image. A local smoke test still requires Docker Desktop or another running Docker daemon.
 
 ## Résumé-ready description
 
 Built a FastAPI + LangChain portfolio platform that generates curriculum-aware technical teaching content with tool-grounded context, deterministic safety validation, PostgreSQL-backed drafts/notes, interactive quizzes, and a self-hosted publish workflow packaged with Docker Compose and educational Kubernetes manifests.
+
+For a concise discussion of the decisions, tradeoffs, and changes I would make today, see [`docs/project-writeup.md`](docs/project-writeup.md).
 
 ## Interview talking points
 
