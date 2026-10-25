@@ -4,6 +4,12 @@ AI-assisted technical teaching platform that turns a learning topic, optional no
 
 > **In one sentence:** this is a human-reviewed content pipeline, not a chat interface: it gathers grounded context, produces typed output, runs deterministic checks, and requires approval before publishing.
 
+## Why this project matters
+
+This is a deployable AI workflow rather than a single-prompt demo. It includes
+persistent execution state, deterministic validation, human approval, health
+checks, automated testing, CI, containerization, and deployment configuration.
+
 ## Product problem
 
 Engineers learning a long path (FastAPI → Docker → Kubernetes → LLM inference → vLLM → RAG → Prometheus/Grafana) accumulate notes that rarely become durable teaching artifacts. Generic LLM wrappers invent personal war stories, fake metrics, and ungrounded commands. This project treats generation as a **reviewable draft pipeline** with curriculum tools, deterministic validation, manual approval, and self-hosted publishing.
